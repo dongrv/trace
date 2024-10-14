@@ -18,7 +18,7 @@ type Trace struct {
 	Args        []interface{} `json:"args,omitempty"`
 	Cost        float64       `json:"cost,omitempty"` // unit: second
 	Description KV            `json:"description,omitempty"`
-	Traces      []*Trace      `json:"children,omitempty"`
+	Traces      []*Trace      `json:"traces,omitempty"`
 }
 
 func clear(t *Trace) {
