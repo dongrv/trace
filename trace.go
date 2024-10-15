@@ -9,20 +9,20 @@ import (
 	"time"
 )
 
-type Trace struct {
+type Context struct {
 	context     context.Context
 	Id          string        `json:"id"`
 	Start       int64         `json:"start"`
 	End         int64         `json:"end"`
-	Text        string        `json:"text,omitempty"`
+	Format      string        `json:"format,omitempty"`
 	Args        []interface{} `json:"args,omitempty"`
 	Cost        float64       `json:"cost,omitempty"` // unit: second
 	Description KV            `json:"description,omitempty"`
-	Traces      []*Trace      `json:"traces,omitempty"`
+	Traces      []*Context    `json:"traces,omitempty"`
 }
 
-func clear(t *Trace) {
-	t.Text = ""
+func clear(t *Context) {
+	t.Format = ""
 	t.Args = nil
 	t.Cost = 0
 	t.Description = nil
@@ -32,61 +32,66 @@ func clear(t *Trace) {
 	metaPool.Put(t)
 }
 
-func (t *Trace) Set(text string, args []interface{}) *Trace {
-	t.Text, t.Args = text, args
-	return t
+func (ctx *Context) Set(text string, args []interface{}) *Context {
+	ctx.Format, ctx.Args = text, args
+	return ctx
 }
 
-func (t *Trace) SetDescription(key string, values ...interface{}) *Trace {
-	if t.Description == nil {
-		t.Description = make(KV)
+func (ctx *Context) SetKV(key string, values ...interface{}) *Context {
+	if ctx.Description == nil {
+		ctx.Description = make(KV)
 	}
 	for _, value := range values {
-		t.Description.Set(key, value)
+		ctx.Description.Set(key, value)
 	}
-	return t
+	return ctx
 }
 
-func (t *Trace) WithContext(parent context.Context) *Trace {
-	t.context = parent
-	return t
+func (ctx *Context) WithContext(parent context.Context) *Context {
+	ctx.context = parent
+	return ctx
 }
 
-func (t *Trace) NewTrace(id string) *Trace {
-	trace := Pop(id)
-	t.Traces = append(t.Traces, trace)
+func (ctx *Context) New(id string) *Context {
+	trace := New(id)
+	ctx.Traces = append(ctx.Traces, trace)
 	return trace
 }
 
-func (t *Trace) Stop() *Trace {
-	t.End = time.Now().UnixMilli()
-	t.Cost = float64(t.End-t.Start) / 1000
-	return t
+func (ctx *Context) Stop() *Context {
+	ctx.End = time.Now().UnixMilli()
+	ctx.Cost = float64(ctx.End-ctx.Start) / 1000
+	return ctx
 }
 
-func (t *Trace) Clear() {
-	clear(t)
+func (ctx *Context) String() string {
+	bytes, _ := json.Marshal(ctx)
+	return string(bytes)
 }
 
-func (t *Trace) Upload(fn func(stream []byte) error) error {
-	bytes, err := json.Marshal(t)
+func (ctx *Context) Clear() {
+	clear(ctx)
+}
+
+func (ctx *Context) Upload(fn func(stream []byte) error) error {
+	bytes, err := json.Marshal(ctx)
 	if err != nil {
 		return err
 	}
 	if fn == nil {
-		return errors.New("now upload target")
+		return errors.New("no upload target")
 	}
 	return fn(bytes)
 }
 
-var metaPool = sync.Pool{New: func() interface{} { return &Trace{} }}
+var metaPool = sync.Pool{New: func() interface{} { return &Context{} }}
 
-func Pop(id string) *Trace {
-	meta := metaPool.Get().(*Trace)
-	meta.Id, meta.Start = strings.TrimSpace(id), time.Now().UnixMilli()
-	return meta
+func New(id string) *Context {
+	ctx := metaPool.Get().(*Context)
+	ctx.Id, ctx.Start = strings.TrimSpace(id), time.Now().UnixMilli()
+	return ctx
 }
 
-func End(t *Trace) {
+func End(t *Context) {
 	clear(t)
 }
