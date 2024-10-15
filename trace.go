@@ -29,6 +29,7 @@ func clear(t *Context) {
 	for _, m := range t.Traces {
 		clear(m)
 	}
+	t.Traces = nil
 	metaPool.Put(t)
 }
 
