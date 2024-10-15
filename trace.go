@@ -22,6 +22,7 @@ type Context struct {
 }
 
 func clear(t *Context) {
+	t.context = nil
 	t.Format = ""
 	t.Args = nil
 	t.Cost = 0
