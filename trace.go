@@ -49,6 +49,10 @@ func (ctx *Context) SetKV(key string, values ...interface{}) *Context {
 	return ctx
 }
 
+func (ctx *Context) OK() bool {
+	return ctx != nil
+}
+
 func (ctx *Context) WithContext(parent context.Context) *Context {
 	ctx.context = parent
 	return ctx
